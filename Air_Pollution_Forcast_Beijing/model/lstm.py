@@ -18,6 +18,7 @@ from sklearn.metrics import mean_squared_error
 model = Sequential()
 model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
 model.add(Dense(1))
+#mae损失
 model.compile(loss='mae', optimizer='adam')
 history = model.fit(train_X, train_y, epochs=50, batch_size=72, validation_data=(test_X, test_y))
 

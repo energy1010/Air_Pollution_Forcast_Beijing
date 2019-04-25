@@ -21,7 +21,7 @@ from sklearn.preprocessing import OneHotEncoder
 from Air_Pollution_Forcast_Beijing.model.series_to_supervised_learning import series_to_supervised
 pd.options.display.expand_frame_repr = False
 
-
+#read pollution.csv
 dataset = pd.read_csv(PROCESS_LEVEL1, header=0, index_col=0)
 dataset_columns = dataset.columns
 values = dataset.values
