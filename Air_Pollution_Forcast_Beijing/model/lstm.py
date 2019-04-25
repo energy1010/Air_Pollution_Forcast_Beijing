@@ -16,8 +16,14 @@ from math import sqrt
 from sklearn.metrics import mean_squared_error
 
 model = Sequential()
+#Input must be three-dimensional, comprised of samples, timesteps, and features.
+# specify the input_shape argument that expects a tuple containing the number of timesteps and the number of features
+# X = PM2.5(t-1)  pollution(t-1) ,dew(t-1) ,temp(t-1) ,press(t-1) ,wnd_dir(t-1) ,wnd_spd(t-1) ,snow(t-1) ,rain(t-1)
+# Y = PM2.5(t)
+#(8760, 1, 8) (8760,) (35039, 1, 8) (35039,)
 model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
 model.add(Dense(1))
+
 #mae损失
 model.compile(loss='mae', optimizer='adam')
 history = model.fit(train_X, train_y, epochs=50, batch_size=72, validation_data=(test_X, test_y))

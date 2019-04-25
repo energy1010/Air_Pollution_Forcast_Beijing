@@ -27,6 +27,7 @@ dataset_columns = dataset.columns
 values = dataset.values
 # print(dataset)
 
+#统一处理训练集与测试集
 # 对第四列（风向）数据进行编码，也可进行 哑编码处理
 encoder = LabelEncoder()
 values[:, 4] = encoder.fit_transform(values[:, 4])
