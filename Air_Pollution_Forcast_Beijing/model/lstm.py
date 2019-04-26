@@ -43,6 +43,8 @@ yHat = model.predict(test_X)
     这里注意的是保持拼接后的数组  列数  需要与之前的保持一致
 '''
 inv_yHat = concatenate((yHat, test_x[:, 1:]), axis=1)   # 数组拼接
+#pdb.set_trace()
+print(inv_yHat.shape)
 inv_yHat = scaler.inverse_transform(inv_yHat)
 inv_yHat = inv_yHat[:, 0]
 

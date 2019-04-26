@@ -26,7 +26,7 @@ import pdb
 dataset = pd.read_csv(PROCESS_LEVEL1, header=0, index_col=0)
 dataset_columns = dataset.columns
 values = dataset.values
-# print(dataset)
+ print(values.shape) # (43800, 8)
 
 #统一处理训练集与测试集
 # 对第四列（风向）数据进行编码，也可进行 哑编码处理
@@ -37,7 +37,9 @@ values = values.astype('float32')
 # 对数据进行归一化处理, valeus.shape=(, 8),inversed_transform时也需要8列
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled = scaler.fit_transform(values)
-pdb.set_trace()
+print(scaled.shape)
+#pdb.set_trace()
+
 
 # 将序列数据转化为监督学习数据
 reframed = series_to_supervised(scaled, dataset_columns, 1, 1)

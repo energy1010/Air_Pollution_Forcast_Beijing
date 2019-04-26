@@ -10,6 +10,7 @@ Question: LSTM data Preparation(normalizing the input variables)
 ---------------------------
 """
 import pandas as pd
+import pdb
 
 
 def series_to_supervised(data, columns, n_in=1, n_out=1, dropnan=True):
@@ -17,7 +18,7 @@ def series_to_supervised(data, columns, n_in=1, n_out=1, dropnan=True):
     Frame a time series as a supervised learning dataset.
     Arguments:
         data: Sequence of observations as a list or NumPy array.
-        n_in: Number of lag observations as input (X).
+        n_in: timeSteps, Number of lag observations as input (X).
         n_out: Number of observations as output (y).
         dropnan: Boolean whether or not to drop rows with NaN values.
     Returns:
@@ -27,6 +28,7 @@ def series_to_supervised(data, columns, n_in=1, n_out=1, dropnan=True):
     df = pd.DataFrame(data)
     cols, names = list(), list()
     # input sequence (t-n, ... t-1)
+    pdb.set_trace()
     for i in range(n_in, 0, -1):
         cols.append(df.shift(i))
         names += [('%s%d(t-%d)' % (columns[j], j + 1, i)) for j in range(n_vars)]
@@ -43,6 +45,7 @@ def series_to_supervised(data, columns, n_in=1, n_out=1, dropnan=True):
     # drop rows with NaN values
     if dropnan:
         clean_agg = agg.dropna()
+    clean_agg.to_csv('series.csv')
     return clean_agg
     # return agg
 
