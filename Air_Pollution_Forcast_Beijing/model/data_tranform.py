@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 """
-Time:17/1/1
 ---------------------------
 Question: Series  --->  Supervised Learning Problem
     1、时间序列预测，以前一时刻（t-1）的所有数据预测当前时刻（t）的值
@@ -19,42 +18,70 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
 from Air_Pollution_Forcast_Beijing.model.series_to_supervised_learning import series_to_supervised
-pd.options.display.expand_frame_repr = False
+#import pickle as pickle
+#import cPickle as pickle
 import pdb
 
-#read pollution.csv
+
+pd.options.display.expand_frame_repr = False
+
+#PROCESS_LEVEL1 = '../resource/pollution.csv'
+#read pollution.csv, 索引列为date
 dataset = pd.read_csv(PROCESS_LEVEL1, header=0, index_col=0)
 dataset_columns = dataset.columns
 values = dataset.values
- print(values.shape) # (43800, 8)
+#date,   pollution,dew,temp,press,wnd_dir,wnd_spd,snow,rain
+print(values.shape) # (43800, 8)
 
-#统一处理训练集与测试集
+##统一处理训练集与测试集
 # 对第四列（风向）数据进行编码，也可进行 哑编码处理
 encoder = LabelEncoder()
 values[:, 4] = encoder.fit_transform(values[:, 4])
 values = values.astype('float32')
+#encoder.dumps('labelencoder.bin')
 
 # 对数据进行归一化处理, valeus.shape=(, 8),inversed_transform时也需要8列
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled = scaler.fit_transform(values)
+print(scaler.data_max_)
+#scaled.data
+#scaler.inverse_transform(scaled)
 print(scaled.shape)
-#pdb.set_trace()
+pdb.set_trace()
+#pickle.dumps('scaled.bin')
 
+#记录每天每小时的pm值
 
-# 将序列数据转化为监督学习数据
-reframed = series_to_supervised(scaled, dataset_columns, 1, 1)
+pdb.set_trace()
+# 将序列数据转化为监督学习数据 label放在第一列
+reframed = series_to_supervised(scaled, dataset_columns, n_in=1, n_out=1, dropnan=True )
+#,pollution1(t-1),dew2(t-1),temp3(t-1),press4(t-1),wnd_dir5(t-1),wnd_spd6(t-1),snow7(t-1),rain8(t-1),
+#pollution1(t),dew2(t),temp3(t),press4(t),wnd_dir5(t),wnd_spd6(t),snow7(t),rain8(t)
 # 只考虑当前时刻(t)的前一时刻（t-1）的PM2.5值
+
 reframed.drop(reframed.columns[[9, 10, 11, 12, 13, 14, 15]], axis=1, inplace=True)
 
+reframed.to_csv('df.csv', encoding='utf-8', header=True, index=False )
+print("save to file")
+
+#dataframe => ndarray
 values = reframed.values
 n_train_hours = 365 * 24
 train = values[:n_train_hours, :]
 test = values[n_train_hours:, :]
 
+df_train = reframed.iloc[:n_train_hours, :]
+df_test = reframed.iloc[n_train_hours:, :]
+
+df_train.to_csv('df_train.csv', encoding='utf-8', header=True, index=False )
+df_test.to_csv('df_test.csv', encoding='utf-8', header=True, index=False )
+
 # 监督学习结果划分,test_x.shape = (, 8)
-train_x, train_y = train[:, :-1], train[:, -1]
+train_x, train_y = train[:, :-1], train[:, -1] #ndarray
 test_x, test_y = test[:, :-1], test[:, -1]
 
 # 为了在LSTM中应用该数据，需要将其格式转化为3D format，即[Samples, timesteps, features]
 train_X = train_x.reshape((train_x.shape[0], 1, train_x.shape[1]))
 test_X = test_x.reshape((test_x.shape[0], 1, test_x.shape[1]))
+
+

@@ -2,10 +2,6 @@
 # -*- coding: utf-8 -*-
 #https://blog.csdn.net/android_ruben/article/details/80206792
 """
-Time:17/1/1
----------------------------
-Question:
----------------------------
 """
 #from keras import Sequential
 #from keras.layers import LSTM, Dense

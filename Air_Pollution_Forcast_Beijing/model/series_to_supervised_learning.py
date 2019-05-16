@@ -17,21 +17,27 @@ def series_to_supervised(data, columns, n_in=1, n_out=1, dropnan=True):
     """
     Frame a time series as a supervised learning dataset.
     Arguments:
-        data: Sequence of observations as a list or NumPy array.
+        data: Sequence of observations as a list or NumPy array( samples* nvar).
+        columns:
         n_in: timeSteps, Number of lag observations as input (X).
         n_out: Number of observations as output (y).
         dropnan: Boolean whether or not to drop rows with NaN values.
     Returns:
         Pandas DataFrame of series framed for supervised learning.
     """
+    #n_vars 特征维度
+    pdb.set_trace()
     n_vars = 1 if type(data) is list else data.shape[1]
     df = pd.DataFrame(data)
+    #cols: list of dataframe
     cols, names = list(), list()
     # input sequence (t-n, ... t-1)
     pdb.set_trace()
     for i in range(n_in, 0, -1):
+        #df 向前移动
         cols.append(df.shift(i))
         names += [('%s%d(t-%d)' % (columns[j], j + 1, i)) for j in range(n_vars)]
+
     # forecast sequence (t, t+1, ... t+n)
     for i in range(0, n_out):
         cols.append(df.shift(-i))
@@ -51,6 +57,12 @@ def series_to_supervised(data, columns, n_in=1, n_out=1, dropnan=True):
 
 
 if __name__ == '__main__':
-    values = [x for x in range(10)]
-    data = series_to_supervised(values, ['temp'], 2)
+
+    #values = [x for x in range(10)]
+    #data = series_to_supervised(values, ['temp'], 2)
+    df = pd.read_csv('df.csv', encoding='utf-8', header=0 )
+    print( df.head(3) )
+    reframed = series_to_supervised(df.values, df.columns, n_in=3, n_out=1, dropnan=True )
+    print( reframed.info() )
+    pdb.set_trace()
     print(data)

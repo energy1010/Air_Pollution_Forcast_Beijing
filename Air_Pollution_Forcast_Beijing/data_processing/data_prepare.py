@@ -16,7 +16,7 @@ from Air_Pollution_Forcast_Beijing.util import RAW_DATA, PROCESS_LEVEL1
 pd.options.display.expand_frame_repr = False
 
 
-#RAW_DATA = '../resource/PRSA_data_2010.1.1-2014.12.31.csv'
+RAW_DATA = '../resource/PRSA_data_2010.1.1-2014.12.31.csv'
 #PROCESS_LEVEL1 = '../resource/pollution.csv'
 
 
@@ -35,10 +35,13 @@ raw_data = pd.read_csv(RAW_DATA, parse_dates=[['year', 'month', 'day', 'hour']],
 raw_data.drop('No', axis=1, inplace=True)
 #重命名列
 raw_data.columns = ['pollution', 'dew', 'temp', 'press', 'wnd_dir', 'wnd_spd', 'snow', 'rain']
+
+
+#重命名索引名称
 raw_data.index.name = 'date'
 #填充na值
 raw_data['pollution'].fillna(0, inplace=True)
 raw_data = raw_data[24:]
-# print(raw_data.head())
+print(raw_data.head(3))
 raw_data.to_csv(PROCESS_LEVEL1)
 print("finish")
