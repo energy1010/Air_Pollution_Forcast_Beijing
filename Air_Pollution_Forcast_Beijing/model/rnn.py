@@ -1,19 +1,23 @@
 #!/usr/bin/env python
 # encoding:utf-8
 import torch
-import torch.utils.data as Data
+#import torch.utils.data as Data
+from torch.utils.data.dataloader import DataLoader
+from torch.utils.data.dataset import TensorDataset
 import torchvision
 from torchvision import datasets, transforms
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from Air_Pollution_Forcast_Beijing.model.data_tranform import scaler, train_x, test_x, train_X, test_X, train_y, test_y
+#from Air_Pollution_Forcast_Beijing.model.data_tranform import scaler, train_x, test_x, train_X, test_X, train_y, test_y
 import matplotlib.pyplot as plt
-from numpy import concatenate  # 数组拼接
+from numpy import concatenate
 from math import sqrt
 from sklearn.metrics import mean_squared_error
+import pickle
 
 import pdb
 
@@ -23,6 +27,21 @@ import pdb
 """基于RNN的分类模型  每一行当做时间特征 """
 
 BATCH_SIZE = 50
+
+
+
+def loss_mape(labels, preds, scaler_label=None ):
+    if scaler_label:
+        labels = labels* scaler_label.data_range_.item() + scaler_label.data_min_.item()
+        preds = preds* scaler_label.data_range_.item() + scaler_label.data_min_.item()
+    mse = torch.mean(  torch.pow( labels- preds, 2 ) )
+    mabe = torch.mean( torch.abs( labels -preds ) )
+    mape = torch.mean( torch.abs( (labels-preds)/labels  ) )
+
+    res = (mse, mabe, mape )
+    return res
+
+
 
 class RNN(torch.nn.Module):
 
@@ -66,127 +85,105 @@ if __name__ == "__main__":
     print("main")
     # 1. 加载数据
 
+    f_file = '../feat/b_w47_s464811_feat.csv'
+
+    pdb.set_trace()
+    df = pd.read_csv( f_file, encoding='utf-8', parse_dates=[0], index_col=0, header=0 )
+    print(df.shape)
+    print( df.head(3) )
+
+    n_dev = min( (len(df)-1 )*0.1, 10)
+    n_train = len(df)-1 - n_dev
+    print("ntrain: %s ndev:%s " %(n_train, n_dev))
+
+    scaler_feat = MinMaxScaler(feature_range=(0, 1))
+    scaler_label  = MinMaxScaler( feature_range=(1e-4, 1) )
+    sca_X = scaler_feat.fit_transform(df.iloc[:,:-1].values )
+    sca_y = scaler_label.fit_transform( df.iloc[:,[-1]].values )
+
+    df_nor = pd.concat( [pd.DataFrame(sca_X, index=df.index ), pd.DataFrame(sca_y, index=df.index ) ], axis=1 )
+    df = df_nor
+
+    train_X, train_y, dev_X, dev_y = df.iloc[:n_train, :-1], df.iloc[:n_train, [-1]], df.iloc[n_train:-1, :-1], df.iloc[n_train:-1, [-1] ]
+    pred_X, pred_y = df.iloc[[-1], :-1], df.iloc[[-1], -1]
+
+
     #1、时间序列预测，以前一时刻（t-1）的所有数据预测当前时刻（t）的值
 
     #X = PM2.5(t-1)  pollution(t-1) ,dew(t-1) ,temp(t-1) ,press(t-1) ,wnd_dir(t-1) ,wnd_spd(t-1) ,snow(t-1) ,rain(t-1)
     #Y = PM2.5(t)
     #pdb.set_trace()
-    ##batch ,seq, fea
-    #test_x=test_x.view(-1,28,28)
     # 2. 网络搭建
+    train_X= torch.tensor(train_X.values, dtype=torch.float32 )
+    train_y= torch.tensor(train_y.values, dtype=torch.float32 )
+    train_X= train_X.unsqueeze(1)
 
-    net=RNN( input_size=8, hidden_size=64, output_size=1, num_layers=1, dropout_p=0.05, batch_first=True )
+    test_X= torch.tensor(dev_X.values, dtype=torch.float32 )
+    test_y= torch.tensor(dev_y.values, dtype = torch.float32 )
+    test_X= test_X.unsqueeze(1)
+
+    pred_X= torch.tensor(pred_X.values, dtype=torch.float32 )
+    pred_X= pred_X.unsqueeze(1)
+
+    dtrain = DataLoader( TensorDataset( train_X, train_y ), shuffle=True, batch_size = 16 )
+    #ddev = DataLoader( TensorDataset( test_X, test_y ), shuffle=True, batch_size = 16 )
+
+    net=RNN( input_size= train_X.shape[-1], hidden_size=64, output_size=1, num_layers=1, dropout_p=0.05, batch_first=True )
 
     # 3. 训练
     # 3. 网络的训练（和之前CNN训练的代码基本一样）
 
 
     #opt_SGD, opt_Momentum, opt_RMSprop, opt_Adam]
-    optimizer=torch.optim.Adam(net.parameters(),lr=0.001)
+    optimizer=torch.optim.Adam(net.parameters(),lr=0.001, weight_decay=0.008 )
 
     #回归： 最小mse
-    loss_F=torch.nn.MSELoss()
+    #loss_F=torch.nn.MSELoss()
     #交叉熵损失函数
     #loss_F=torch.nn.CrossEntropyLoss()
 
     #pdb.set_trace()
-    train_X= torch.tensor(train_X)
-    train_y= torch.tensor(train_y)
-    train_y = train_y.unsqueeze(1) #[batch, 1]
-    train_size = train_X.shape[0]
-
-    test_X= torch.tensor(test_X)
-    test_y= torch.tensor(test_y)
-    test_y = test_y.unsqueeze(1) #[batch, 1]
-    test_size = test_X.shape[0]
-    #mini-batch
     #pdb.set_trace()
-    #for epoch in range(100):
-    #    pdb.set_trace()
-    #    # 数据集只迭代一次
-    #    for step in range(0, train_size, 50 ):
-    #    #for step, input_data in enumerate(dataloader):
-    #        #x,y=input_data
-    #        print(step)
-    #        if step+50>train_size:
-    #            strain_X = train_X[step:train_size, : , :]
-    #            strain_y = train_y[step:train_size, : ]
-    #        else:
-    #            strain_X = train_X[step:step+50, : , :]
-    #            strain_y = train_y[step:step+50, : ]
-    #        pred=net(strain_X)
-    #        #break;
-    #        loss=loss_F(pred,strain_y)
-    #        # 计算loss
-    #        optimizer.zero_grad()
-    #        loss.backward()
-    #        optimizer.step()
-    #        if step%2==0:
-    #            print("loss:" + str(loss.item()) )
-    #        # 每50步，计算精度
-    #    #    with torch.no_grad():
-    #    #        test_pred=net(test_x)
-    #            #prob=torch.nn.functional.softmax(test_pred,dim=1)
-    #            #pred_cls=torch.argmax(prob,dim=1)
-    #            #acc=(pred_cls==test_y).sum().numpy()/pred_cls.size()[0]
-    #            #rmse = sqrt(mean_squared_error(, inv_y))
-    #            #print(f"{epoch}-{step}: accuracy:{acc}")
 
-    #全局统计RMSE
-    for epoch in range(1000):
-        # 数据集只迭代一次
-        #for step, input_data in enumerate(dataloader):
-            #x,y=input_data
-        pred=net(train_X)
+    mape_train_list = []
+    mape_dev_list = []
+
+    best_dev = None
+    best_model = None
+
+    for epoch in range(10):
+        epoch +=1
         #pdb.set_trace()
-        #break;
-        loss=loss_F(pred, train_y)
+        for step , (strain_X, strain_y) in enumerate( dtrain ):
+            step+=1
+            print(step)
+            pred=net(strain_X)
+            #break;
+            #loss=loss_F(pred,strain_y)
+            mse_train, mabe_train, mape_train = loss_mape( strain_y, pred, scaler_label )
+            mape_train_list += [mape_train.data.item() ]
+            # 计算loss
+            optimizer.zero_grad()
+            mape_train.backward()
+            optimizer.step()
+            print("epoch:%s step:%s/%s mse_train: %.3f mabe_train:%.3f mape_train:%.3f" %( epoch, step, strain_X.shape[0],  mse_train.data.item(), mabe_train.data.item(), mape_train.data.item()  ) )
+            # 每50步，计算精度
+            with torch.no_grad():
+                test_pred=net(test_X)
+                mse_dev, mabe_dev, mape_dev= loss_mape( test_y, test_pred, scaler_label )
+                mape_dev_list += [mape_dev.data.item() ]
+                if not best_dev or mape_dev.data.item()< best_dev:
+                    best_model = net
+                    best_dev = mape_dev.data.item()
+                print("epoch:%s step:%s/%s mse_dev: %.3f mabe_dev:%3.f mape_dev:%3.f" %( epoch, step, strain_X.shape[0],  mse_dev.data.item(), mabe_dev.data.item(), mape_dev.data.item()  ) )
+
+    pdb.set_trace()
+    df_loss = pd.DataFrame( np.stack([np.array(mape_train_list), np.array(mape_dev_list) ] , axis=-1 ) ) #, keys=["train_loss", "dev_loss"])
+    df_loss.plot()
+    plt.show()
+
+    print("best_dev: %.3f" %(best_dev))
+    pred = scaler_label.inverse_transform( best_model( pred_X).data ).item()
+    print("pred: %.3f " %( pred) )
 
 
-
-        # 计算loss
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        if epoch%2==0:
-            print("train ori loss:" + str(loss.item()) )
-
-            #pdb.set_trace()
-            pred_arr = torch.tensor(pred).detach().numpy()
-            train_arr = torch.tensor(train_x[:, 1:]).detach().numpy()
-            inv_pred= np.concatenate( ( pred_arr, train_arr ) , axis =1)
-            #print(inv_pred_test.shape)
-            inv_pred= scaler.inverse_transform( inv_pred)
-            inv_pred= inv_pred[:,0]
-
-            inv_train_y = np.concatenate( ( train_y,  train_arr ), axis=1 )
-            inv_train_y = scaler.inverse_transform( inv_train_y)
-            inv_train_y = inv_train_y[:, 0]
-            loss1 = mean_squared_error( inv_train_y, inv_pred )
-            print("train loss1: " + str( loss1 ) )
-            loss2 = loss_F( torch.tensor( inv_pred), torch.tensor(inv_train_y)  )
-            print("train loss:" + str(loss2.item()) )
-
-
-
-
-        with torch.no_grad():
-            #pdb.set_trace()
-            # 数据集只迭代一次
-            pred_test = net(test_X) # [batch,1]
-            loss=loss_F(pred_test, test_y)
-            #rmse = sqrt(mean_squared_error(, inv_y))
-            #print(f"{epoch}-{step}: accuracy:{acc}")
-            print("test ori loss:" + str(loss.item()) )
-            #pdb.set_trace()
-            inv_pred_test = np.concatenate( ( pred_test, test_x[:, 1:] ) , axis =1)
-            #print(inv_pred_test.shape)
-            inv_pred_test = scaler.inverse_transform( inv_pred_test )
-            inv_pred_test = inv_pred_test[:,0]
-
-            #test_y = test_y.reshape((len(test_y), 1))
-            inv_test_y = concatenate((test_y, test_x[:, 1:]), axis=1)
-            inv_test_y = scaler.inverse_transform(inv_test_y)    # 将标准化的数据转化为原来的范围
-            inv_test_y = inv_test_y[:, 0]
-            loss=loss_F( torch.tensor( inv_pred_test), torch.tensor( inv_test_y) )
-            print("test loss:" + str(loss.item()) )

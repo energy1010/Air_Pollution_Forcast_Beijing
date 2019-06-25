@@ -12,7 +12,7 @@ setup(
     license = "MIT Licence",
 
     url = "http://test.com",
-    author = "test",
+    author = "energy1010",
     author_email = "test@gmail.com",
 
     packages = find_packages(),
