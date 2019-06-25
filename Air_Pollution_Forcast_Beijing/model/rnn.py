@@ -67,7 +67,6 @@ class RNN(torch.nn.Module):
         # c_n:    [num_layers, batch_size, hidden_size]
         # 虽然LSTM的batch_first为True,但是h_n/c_n的第一维还是num_layers
         # c_n: 同h_n
-        #pdb.set_trace()
         output, (h_n,c_n)=self.rnn(x)
         #print(output.size())
         # output_in_last_timestep=output[:,-1,:]
@@ -87,7 +86,6 @@ if __name__ == "__main__":
 
     f_file = '../feat/b_w47_s464811_feat.csv'
 
-    pdb.set_trace()
     df = pd.read_csv( f_file, encoding='utf-8', parse_dates=[0], index_col=0, header=0 )
     print(df.shape)
     print( df.head(3) )
@@ -112,7 +110,6 @@ if __name__ == "__main__":
 
     #X = PM2.5(t-1)  pollution(t-1) ,dew(t-1) ,temp(t-1) ,press(t-1) ,wnd_dir(t-1) ,wnd_spd(t-1) ,snow(t-1) ,rain(t-1)
     #Y = PM2.5(t)
-    #pdb.set_trace()
     # 2. 网络搭建
     train_X= torch.tensor(train_X.values, dtype=torch.float32 )
     train_y= torch.tensor(train_y.values, dtype=torch.float32 )
@@ -142,8 +139,6 @@ if __name__ == "__main__":
     #交叉熵损失函数
     #loss_F=torch.nn.CrossEntropyLoss()
 
-    #pdb.set_trace()
-    #pdb.set_trace()
 
     mape_train_list = []
     mape_dev_list = []
@@ -153,7 +148,6 @@ if __name__ == "__main__":
 
     for epoch in range(10):
         epoch +=1
-        #pdb.set_trace()
         for step , (strain_X, strain_y) in enumerate( dtrain ):
             step+=1
             print(step)
@@ -177,7 +171,6 @@ if __name__ == "__main__":
                     best_dev = mape_dev.data.item()
                 print("epoch:%s step:%s/%s mse_dev: %.3f mabe_dev:%3.f mape_dev:%3.f" %( epoch, step, strain_X.shape[0],  mse_dev.data.item(), mabe_dev.data.item(), mape_dev.data.item()  ) )
 
-    pdb.set_trace()
     df_loss = pd.DataFrame( np.stack([np.array(mape_train_list), np.array(mape_dev_list) ] , axis=-1 ) ) #, keys=["train_loss", "dev_loss"])
     df_loss.plot()
     plt.show()
